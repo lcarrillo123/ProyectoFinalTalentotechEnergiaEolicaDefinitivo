@@ -1126,3 +1126,25 @@ function resetForm(form) {
 
     console.log('Formulario reseteado');
 }
+// Mapa interactivo con imagen
+const markers = document.querySelectorAll('.map-marker');
+const tooltip = document.getElementById('map-tooltip');
+const tooltipTitle = document.getElementById('tooltip-title');
+const tooltipDesc = document.getElementById('tooltip-desc');
+
+markers.forEach(marker => {
+    marker.addEventListener('mouseenter', (e) => {
+        tooltipTitle.textContent = marker.dataset.title;
+        tooltipDesc.textContent = marker.dataset.desc;
+        tooltip.style.display = 'block';
+    });
+
+    marker.addEventListener('mousemove', (e) => {
+        tooltip.style.left = e.pageX + 10 + 'px';
+        tooltip.style.top = e.pageY + 10 + 'px';
+    });
+
+    marker.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+    });
+});
