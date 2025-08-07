@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Energía Eólica - Colombia</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌪️ Calculadora de Energía Eólica</h1>
+            <p>Análisis de consumo energético y potencial eólico en Colombia</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Sección Calculadora -->
+            <section class="section">
+                <h2>📊 Calculadora de Consumo Energético</h2>
+                <div class="calculator-grid">
+                    <div class="calculator-inputs">
+                        <div class="form-group">
+                            <label for="num-personas">Número de personas en el hogar:</label>
+                            <input type="number" id="num-personas" min="1" max="20" value="4" placeholder="Ej: 4">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="consumo-mensual">Consumo mensual (kWh):</label>
+                            <input type="number" id="consumo-mensual" min="1" step="0.1" value="200" placeholder="Ej: 200">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="costo-kwh">Costo por kWh (COP):</label>
+                            <input type="number" id="costo-kwh" min="1" step="0.01" value="650" placeholder="Ej: 650">
+                        </div>
+
+                        <button id="calcular-btn" class="btn btn-primary">
+                            Calcular Análisis Energético
+                        </button>
+                    </div>
+
+                    <div class="calculator-results">
+                        <div id="results-content" class="results-placeholder">
+                            <p>🔢 Ingresa los datos para ver el análisis completo de tu consumo energético</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Carga de CSV -->
+            <section class="section">
+                <h2>📁 Análisis de Datos CSV</h2>
+                
+                <div class="upload-section">
+                    <div id="upload-area" class="upload-area">
+                        <div class="upload-content">
+                            <div class="upload-icon">📊</div>
+                            <p class="upload-text">Arrastra tu archivo CSV aquí o haz clic para seleccionar</p>
+                            <p class="upload-subtext">Formatos soportados: .csv</p>
+                            <button id="select-file-btn" class="btn btn-secondary">Seleccionar Archivo</button>
+                        </div>
+                        <input type="file" id="file-input" accept=".csv" style="display: none;">
+                    </div>
+
+                    <div id="file-info" class="file-info" style="display: none;">
+                        <div class="file-details">
+                            <span class="file-icon">📄</span>
+                            <span id="file-name" class="file-name"></span>
+                            <button id="process-file-btn" class="btn btn-primary btn-small">Procesar Archivo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de datos -->
+                <div id="data-table-container" class="data-table-container" style="display: none;">
+                    <h3>📋 Vista previa de datos</h3>
+                    <div class="table-wrapper">
+                        <table id="data-table" class="data-table">
+                            <thead>
+                                <tr id="table-header"></tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Generación de gráficos -->
+                <div id="charts-container" class="charts-container" style="display: none;">
+                    <div class="chart-controls">
+                        <div class="form-group">
+                            <label for="chart-column">Selecciona columna para graficar:</label>
+                            <select id="chart-column" class="chart-select"></select>
+                        </div>
+                        <button id="generate-charts-btn" class="btn btn-primary">Generar Gráficos</button>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>📊 Gráfico de Torta</h4>
+                            <canvas id="pie-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>📈 Gráfico de Líneas</h4>
+                            <canvas id="line-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>📊 Gráfico de Barras</h4>
+                            <canvas id="bar-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Simulación Interactiva -->
+            <section class="section">
+                <h2>🎮 Simulación Interactiva de Energía Eólica</h2>
+                <div class="simulation-container">
+                    <div class="simulation-display">
+                        <svg width="800" height="400" viewBox="0 0 800 400" class="simulation-svg">
+                            <!-- Turbina Eólica -->
+                            <g id="turbine-group" transform="translate(100, 200)">
+                                <!-- Torre -->
+                                <rect id="tower" x="-5" y="0" width="10" height="150" fill="#7f8c8d" 
+                                      class="clickable-part" data-part="tower" stroke="#2c3e50" stroke-width="2"/>
+                                
+                                <!-- Nacelle -->
+                                <ellipse id="nacelle" cx="0" cy="-10" rx="25" ry="15" fill="#34495e" 
+                                         class="clickable-part" data-part="nacelle" stroke="#2c3e50" stroke-width="2"/>
+                                
+                                <!-- Hub -->
+                                <circle id="hub" cx="0" cy="-10" r="8" fill="#2c3e50" 
+                                        class="clickable-part" data-part="hub" stroke="#1a1a1a" stroke-width="2"/>
+                                
+                                <!-- Aspas -->
+                                <g id="blades" class="blades-rotating">
+                                    <path id="blade1" d="M0,-10 L-60,-80 L-65,-85 L-5,-15 Z" fill="#ecf0f1" 
+                                          class="clickable-part blade" data-part="blades" stroke="#bdc3c7" stroke-width="1"/>
+                                    <path id="blade2" d="M0,-10 L52,-69 L57,-64 L5,-5 Z" fill="#ecf0f1" 
+                                          class="clickable-part blade" data-part="blades" stroke="#bdc3c7" stroke-width="1"/>
+                                    <path id="blade3" d="M0,-10 L8,75 L3,80 L-5,-5 Z" fill="#ecf0f1" 
+                                          class="clickable-part blade" data-part="blades" stroke="#bdc3c7" stroke-width="1"/>
+                                </g>
+                                
+                                <!-- Cimentación -->
+                                <ellipse id="foundation" cx="0" cy="160" rx="30" ry="10" fill="#95a5a6" 
+                                         class="clickable-part" data-part="foundation" stroke="#7f8c8d" stroke-width="2"/>
+                            </g>
+                            
+                            <!-- Líneas de transmisión -->
+                            <g id="transmission-lines">
+                                <!-- Torres de transmisión -->
+                                <g id="tower1" transform="translate(250, 250)">
+                                    <line x1="0" y1="0" x2="0" y2="100" stroke="#2c3e50" stroke-width="4"/>
+                                    <line x1="-15" y1="20" x2="15" y2="20" stroke="#2c3e50" stroke-width="2"/>
+                                    <line x1="-10" y1="40" x2="10" y2="40" stroke="#2c3e50" stroke-width="2"/>
+                                </g>
+                                
+                                <g id="tower2" transform="translate(450, 250)">
+                                    <line x1="0" y1="0" x2="0" y2="100" stroke="#2c3e50" stroke-width="4"/>
+                                    <line x1="-15" y1="20" x2="15" y2="20" stroke="#2c3e50" stroke-width="2"/>
+                                    <line x1="-10" y1="40" x2="10" y2="40" stroke="#2c3e50" stroke-width="2"/>
+                                </g>
+                                
+                                <!-- Cables eléctricos -->
+                                <path id="power-line1" d="M130,180 Q190,200 250,170" stroke="#f39c12" 
+                                      stroke-width="3" fill="none" class="power-line"/>
+                                <path id="power-line2" d="M250,170 Q350,160 450,170" stroke="#f39c12" 
+                                      stroke-width="3" fill="none" class="power-line"/>
+                                <path id="power-line3" d="M450,170 Q550,180 650,200" stroke="#f39c12" 
+                                      stroke-width="3" fill="none" class="power-line"/>
+                            </g>
+                            
+                            <!-- Casa -->
+                            <g id="house" transform="translate(650, 250)">
+                                <!-- Estructura de la casa -->
+                                <rect x="0" y="50" width="80" height="60" fill="#e67e22" stroke="#d35400" stroke-width="2"/>
+                                <polygon points="0,50 40,20 80,50" fill="#c0392b" stroke="#a93226" stroke-width="2"/>
+                                
+                                <!-- Ventanas -->
+                                <rect id="window1" x="10" y="65" width="15" height="15" fill="#f1c40f" 
+                                      class="house-light" stroke="#f39c12" stroke-width="1"/>
+                                <rect id="window2" x="55" y="65" width="15" height="15" fill="#f1c40f" 
+                                      class="house-light" stroke="#f39c12" stroke-width="1"/>
+                                
+                                <!-- Puerta -->
+                                <rect x="35" y="80" width="10" height="30" fill="#8b4513" stroke="#654321" stroke-width="1"/>
+                                
+                                <!-- Luces interiores -->
+                                <circle id="light1" cx="17" cy="45" r="3" fill="#f1c40f" 
+                                        class="house-light" opacity="0"/>
+                                <circle id="light2" cx="62" cy="45" r="3" fill="#f1c40f" 
+                                        class="house-light" opacity="0"/>
+                            </g>
+                            
+                            <!-- Partículas de energía -->
+                            <g id="energy-particles"></g>
+                        </svg>
+                    </div>
+                    
+                    <div class="simulation-controls">
+                        <div class="control-buttons">
+                            <button id="play-btn" class="btn btn-success">▶️ Play</button>
+                            <button id="pause-btn" class="btn btn-warning">⏸️ Pausa</button>
+                            <button id="stop-btn" class="btn btn-danger">⏹️ Parar</button>
+                        </div>
+                        
+                        <div class="simulation-info">
+                            <div class="info-panel">
+                                <h4>Estado de la simulación</h4>
+                                <div class="status-indicators">
+                                    <div class="status-item">
+                                        <span>Viento:</span>
+                                        <span id="wind-status">Detenido</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span>Generación:</span>
+                                        <span id="generation-status">0 kW</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span>Casa:</span>
+                                        <span id="house-status">Sin energía</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="component-info-display" class="component-info-display">
+                        <div class="info-placeholder">
+                            <p>🖱️ Haz clic en cualquier parte de la turbina eólica para ver información detallada</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Formulario de Contacto -->
+            <section class="section">
+                <h2>📧 Formulario de Contacto</h2>
+                <div class="contact-form-container">
+                    <form id="contact-form" class="contact-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nombre">Nombre completo *</label>
+                                <input type="text" id="nombre" name="nombre" required>
+                                <div class="validation-message" id="nombre-error"></div>
+                                <div class="validation-success" id="nombre-success">✓</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Correo electrónico *</label>
+                                <input type="email" id="email" name="email" required disabled>
+                                <div class="validation-message" id="email-error"></div>
+                                <div class="validation-success" id="email-success">✓</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="telefono">Teléfono *</label>
+                                <input type="tel" id="telefono" name="telefono" required disabled>
+                                <div class="validation-message" id="telefono-error"></div>
+                                <div class="validation-success" id="telefono-success">✓</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="empresa">Empresa/Organización</label>
+                                <input type="text" id="empresa" name="empresa" disabled>
+                                <div class="validation-message" id="empresa-error"></div>
+                                <div class="validation-success" id="empresa-success">✓</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="asunto">Asunto *</label>
+                            <select id="asunto" name="asunto" required disabled>
+                                <option value="">Selecciona un asunto</option>
+                                <option value="informacion">Solicitud de información</option>
+                                <option value="proyecto">Consulta sobre proyecto</option>
+                                <option value="inversion">Oportunidades de inversión</option>
+                                <option value="tecnico">Soporte técnico</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                            <div class="validation-message" id="asunto-error"></div>
+                            <div class="validation-success" id="asunto-success">✓</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mensaje">Mensaje *</label>
+                            <textarea id="mensaje" name="mensaje" rows="5" placeholder="Describe tu consulta o comentario..." required disabled></textarea>
+                            <div class="validation-message" id="mensaje-error"></div>
+                            <div class="validation-success" id="mensaje-success">✓</div>
+                        </div>
+                        
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="terminos" name="terminos" required disabled>
+                                <span class="checkmark"></span>
+                                Acepto los términos y condiciones de privacidad *
+                            </label>
+                            <div class="validation-message" id="terminos-error"></div>
+                            <div class="validation-success" id="terminos-success">✓</div>
+                        </div>
+                        
+                        <button type="submit" id="enviar-btn" class="btn btn-primary btn-large" disabled>
+                            📤 Enviar Mensaje
+                        </button>
+                        
+                        <div id="progress-bar" class="progress-bar" style="display: none;">
+                            <div id="progress-fill" class="progress-fill"></div>
+                            <span id="progress-text" class="progress-text">Enviando...</span>
+                        </div>
+                        
+                        <div id="success-message" class="success-message" style="display: none;">
+                            <div class="success-content">
+                                <div class="success-icon">✅</div>
+                                <h3>¡Información enviada con éxito!</h3>
+                                <p>Te contactaremos pronto. Gracias por tu interés en la energía eólica.</p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Sección de Información -->
+            <section class="section">
+                <h2>🌟 Información sobre Energía Eólica en Colombia</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon">🌪️</div>
+                        <h3>Potencial Eólico</h3>
+                        <p>Colombia tiene un potencial eólico de <strong>28,000 MW</strong>, principalmente concentrado en La Guajira.</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">⚡</div>
+                        <h3>Generación Actual</h3>
+                        <p>Actualmente solo el <strong>0.1%</strong> de la matriz energética proviene de energía eólica, con gran potencial de crecimiento.</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">💰</div>
+                        <h3>Beneficios Económicos</h3>
+                        <p>La energía eólica puede reducir los costos energéticos hasta un <strong>30%</strong> a largo plazo.</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🌍</div>
+                        <h3>Impacto Ambiental</h3>
+                        <p>Cada kWh eólico evita la emisión de <strong>0.164 kg de CO₂</strong> comparado con fuentes tradicionales.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script
+    .js"></script>
+</body>
+<!-- Sección de Redes Sociales -->
+<section class="section social-section">
+    <h2>📱 Síguenos en Redes Sociales</h2>
+    <div class="social-icons">
+        <a href="https://wa.me/573001234567" target="_blank" title="WhatsApp" class="social-link whatsapp">
+            <img src="https://cdn-icons-png.flaticon.com/512/3670/3670051.png" alt="WhatsApp">
+        </a>
+        <a href="https://x.com/tucuenta" target="_blank" title="X (Twitter)" class="social-link x">
+            <img src="https://cdn-icons-png.flaticon.com/512/5969/5969020.png" alt="X">
+        </a>
+        <a href="https://instagram.com/tucuenta" target="_blank" title="Instagram" class="social-link instagram">
+            <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
+        </a>
+        <a href="mailto:tucorreo@gmail.com" title="Gmail" class="social-link gmail">
+            <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Gmail">
+        </a>
+    </div>
+</section>
+</html>
